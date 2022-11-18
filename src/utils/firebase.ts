@@ -1,7 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup } from "firebase/auth";
-import request from 'axios'
-import firebaseConfig from '../firebase-config.json'
+import request from 'axios';
+import firebaseConfig from './firebase-config.json';
 
 export const signInWithGoogle = async() => {
     const app = initializeApp(firebaseConfig)
