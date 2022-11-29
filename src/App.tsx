@@ -6,15 +6,18 @@ import { LoginButton } from './LoginButton';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Login from './pages/Login';
 import Home from './pages/Home';
+import { ChakraProvider } from '@chakra-ui/react'
+import ImageSelection from './pages/ImageSelection';
+
 
 const router = createBrowserRouter([
   {
-    path: '/',
-    element: <Home/>
+    path: '/home',
+    element: <Home/>,
   },
   {
-    path: '/login',
-    element: <Login/>,
+    path: '/image-selection',
+    element: <ImageSelection/>,
   }
 ])
   
@@ -22,7 +25,10 @@ const router = createBrowserRouter([
 
 function App() {
   return (
-    <RouterProvider router={router} />
+    <ChakraProvider>
+      <RouterProvider router={router} />
+    </ChakraProvider>
+
   );
 }
 
