@@ -1,70 +1,66 @@
 import { useEffect, useState } from "react"
-import { ImageCanvas } from "../components/ImageCanvas"
-import request from 'axios'
-import { ImageDisplay } from "../components/ImageDisplay"
-import { Button, ButtonGroup } from '@chakra-ui/react'
+import { Button, Spinner, Image, Text, VStack, HStack } from '@chakra-ui/react'
+import { useNavigate } from "react-router-dom"
+import { useAuth } from "../contexts/Auth"
+import axios from "../utils/axios-init";
 export default () => {
-    const [value, setValue] = useState(0)
-    const [images, setImages] = useState<{
-        url: string;
-        id: string;
-    }[]>([])
+    const navigate = useNavigate();
 
-    const [coors, setCoors] = useState<{
-        id: string;
-        x: number;
-        y: number;
-    }[]>([])
+    const { logout, accessToken, isAuthenticated, user } = useAuth()
+    const [noMoreImages, setNoMoreImages] = useState(false)
+    const [imageId, setImageId] = useState<string | null>(null)
+    const [imageUrl, setImageUrl] = useState<string | null>(null)
 
-    const [data, setData] = useState<{
-        id: string;
-        x: number;
-        y: number;
-        src: string;
-    }[]>([])
     useEffect(() => {
-        const token = localStorage.getItem('accessToken')
-        const header = `${token}`;
-        request.get('http://localhost:3001/images', { headers: { Authorization: header }}).then(({data}) => {
-            const { images } = data
-            setImages(images)
-        })
-    }, [])
-    useEffect(() => {
-        const token = localStorage.getItem('accessToken')
-        const header = `${token}`;
-        if(images.length > 0) {
-            console.log(images)
-
-            const coordinateMap = images.map(({id, url}) => {
-                console.log(id, url)
-                return request.get(`http://localhost:3001/coordinates/${id}`, { headers: { Authorization: header }})
-                    .then(({ data }) => {
-                        const { x, y } = data
-                        return {
-                            x, y, id, src: url
-                        }
-                    })
-            })
-
-            Promise.all(coordinateMap).then((data) => {
-                setData(data)
-            })
-            
+        if(accessToken) {
+            (async () => {
+                const { data } = await axios.get('/image', {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                })
+                if(data.message) {
+                    setNoMoreImages(true)
+                } else if(data.imageId) {
+                    console.log(data)
+                    setImageId(data.imageId)
+                    setImageUrl(data.url)
+                }
+            }
+            )();
         }
-  
-    }, [images])
+    }, [accessToken, imageId, imageUrl])
 
     return(
-        <>
-            <ImageDisplay 
-                images={data}
-                imageWidth={200} 
-                value={value}
-                setValue={setValue}
-            />
-            <Button colorScheme='green' variant={'solid'}>Submit</Button>
-        </>
-        
+        <VStack>
+
+        {user ? <Text>Hi {user?.name}! You are logged in</Text> : <Spinner />}
+        {noMoreImages ? <Text>No more images to annotate</Text> : null}
+        {
+            (imageId && imageUrl) ?
+            <>
+            <Image src={imageUrl}/>
+            <Text>Image ID: {imageId}</Text>
+            <HStack>
+                <Button onClick={async() => {
+                    await axios.post('/mask', {
+                        imageId,
+                    }, {
+                        headers: {
+                            Authorization: `Bearer ${accessToken}`
+                        }
+                    })
+
+                    setImageId(null)
+                    setImageUrl(null)
+                }}>Save</Button>
+            </HStack>
+
+            </>
+
+        : !noMoreImages ? <Spinner /> : null }
+
+        </VStack>
+
     )
 }
